@@ -29,6 +29,7 @@ func TestGoChannelLinkProbesRequireChannelOffsets(t *testing.T) {
 	tracer.recordGoChannelOffsetAvailability(
 		exec.New(exec.Init{Ino: 1}),
 		&goexec.Offsets{Field: goexec.FieldOffsets{
+			goexec.HchanQcountPos:   uint64(0),
 			goexec.HchanDataqsizPos: uint64(8),
 			goexec.HchanSendxPos:    uint64(48),
 		}},
@@ -40,6 +41,17 @@ func TestGoChannelLinkProbesRequireChannelOffsets(t *testing.T) {
 	for _, symbol := range goChannelLinkProbeSymbols() {
 		require.Contains(t, probes, symbol)
 	}
+}
+
+func TestMissingGoChannelOffsetsUseSentinel(t *testing.T) {
+	var offTable BpfOffTableT
+
+	initMissingGoChannelOffsets(&offTable)
+
+	for _, field := range goChannelOffsetFields {
+		assert.Equal(t, missingGoOffset, offTable.Table[field])
+	}
+	assert.Zero(t, offTable.Table[goexec.ConnFdPos])
 }
 
 func TestProcessBinarySelectsRecordedChannelOffsetState(t *testing.T) {
@@ -62,6 +74,7 @@ func TestProcessBinarySelectsRecordedChannelOffsetState(t *testing.T) {
 
 func goChannelOffsets() *goexec.Offsets {
 	return &goexec.Offsets{Field: goexec.FieldOffsets{
+		goexec.HchanQcountPos:   uint64(0),
 		goexec.HchanDataqsizPos: uint64(8),
 		goexec.HchanSendxPos:    uint64(48),
 		goexec.HchanRecvxPos:    uint64(56),
